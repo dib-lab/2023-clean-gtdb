@@ -79,6 +79,7 @@ rule picklist_picnic:
            db = "db/gtdb-rs207.genomic-reps.dna.k31.zip"
     output: headers = "manifest/sourmash.manifest.csv",
             woohoo = "db/truncated.database.zip"
+    conda: "envs/sourmash.yml"
     benchmark:
          "benchmarks/picklist_picninc.txt"
     resources:
