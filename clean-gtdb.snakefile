@@ -36,7 +36,7 @@ rule sourmash_manifest_destiny:
         mem_mb = 8000,
         time_min = 30
     shell:'''
-        sourmash sig manifest -o {output} {input}
+        sourmash sig manifest -o {output} {input} --no-rebuild
     '''
 
 rule gtdb_manifest_creation:
