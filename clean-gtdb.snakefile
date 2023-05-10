@@ -27,11 +27,11 @@ rule download_all_available_genbank_genomes:
     '''
 
 rule sourmash_manifest_destiny:
-    input: "db/gtdb-rs207.genomic-reps.dna.k31.zip"
-    output: "manifest/sourmash.manifest.original.csv"
+    input: "db/{db}.zip",
+    output: "manifest/{db}.mf.csv",
     conda: "envs/sourmash.yml"
     benchmark:
-        "benchmarks/sourmash_manifest_destiny.txt"
+        "benchmarks/{db}.txt"
     resources:
         mem_mb = 8000,
         time_min = 30
@@ -39,19 +39,31 @@ rule sourmash_manifest_destiny:
         sourmash sig manifest -o {output} {input} --no-rebuild
     '''
 
-rule grepping_the_problem:
+rule get_assembly_summary_identifiers:
     input:
         db = "db/assembly_summary_genbank.txt",
     output: 
-        tmp = "manifest/short.acc.gtdb.genbank.txt",
+        tmp = "manifest/assembly_summary.ident.txt",
     benchmark:
         "benchmarks/grepping_the_problem.txt"
     resources:
         mem_mb = 8000,
         time_min = 30
     shell:'''
-        {{ echo ident; cut -f 1 {input.db} | awk 'NR>2'; }} > {output.tmp}
+        cut -f 1 {input.db} | awk 'NR>2' > {output.tmp}
     '''
+
+rule run_fun_script:
+    input:
+        summary_idents = "manifest/assembly_summary.ident.txt",
+        mf = "manifest/gtdb-rs207.genomic-reps.dna.k31.mf.csv",
+    output:
+        new_mf = "manifest/sourmash.manifest.clean.csv",
+        report = "manifest/clean-report.txt"
+    shell: """
+        ./munge-mf-with-idents.py {input.summary_idents} {input.mf} \
+            --report {output.report} -o {output.new_mf}
+    """
 
 
 rule picklist_picnic:
