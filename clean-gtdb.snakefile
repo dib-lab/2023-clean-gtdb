@@ -1,12 +1,12 @@
+# must use snakemake -s clean-gtdb.snakefile -j 1 --use-conda at minimum 
+DB_V=['gtdb-rs207.genomic-reps.dna.k31'] #add any number of gtdb sourmash databases to this list to process them all. but line 13?
 
 rule all:
-    input: "db/truncated.database.zip"
+    input: expand("db/{gtdb}.clean.zip", gtdb=DB_V)
 
 rule download_sourmash_gather_database:
-    output: "db/gtdb-rs207.genomic-reps.dna.k31.zip"
+    output: expand("db/{db}.zip", db=DB_V)
     threads: 1
-    benchmark:
-        "benchmarks/download_sourmash_gather_database.txt"
     resources:
         mem_mb = 1000,
         time_min = 30
@@ -31,7 +31,7 @@ rule sourmash_manifest_destiny:
     output: "manifest/{db}.mf.csv",
     conda: "envs/sourmash.yml"
     benchmark:
-        "benchmarks/{db}.txt"
+        "benchmarks/manifest_{db}.txt"
     resources:
         mem_mb = 8000,
         time_min = 30
@@ -60,6 +60,7 @@ rule run_fun_script:
     output:
         new_mf = "manifest/sourmash.manifest.clean.csv",
         report = "manifest/clean-report.txt"
+    conda: "envs/sourmash.yml"
     shell: """
         ./munge-mf-with-idents.py {input.summary_idents} {input.mf} \
             --report {output.report} -o {output.new_mf}
@@ -68,16 +69,16 @@ rule run_fun_script:
 
 rule picklist_picnic:
     input:
-        clean = "manifest/short.acc.gtdb.genbank.txt",
-        db = "db/gtdb-rs207.genomic-reps.dna.k31.zip"
+        clean = "manifest/sourmash.manifest.clean.csv",
+        db = "db/{db}.zip"
     output:
-        woohoo = "db/truncated.database.zip"
+        woohoo = "db/{db}.clean.zip"
     conda: "envs/sourmash.yml"
     benchmark:
-         "benchmarks/picklist_picnic.txt"
+         "benchmarks/picklist_picnic_{db}.txt"
     resources:
         mem_mb = 8000,
         time_min = 30
     shell:'''
-        sourmash sig extract --picklist {input.clean}:ident:ident {input.db} -o {output.woohoo}
+        sourmash sig extract --picklist {input.clean}::manifest {input.db} -o {output.woohoo}
     '''
