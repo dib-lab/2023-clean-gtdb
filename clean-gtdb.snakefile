@@ -1,4 +1,9 @@
-# must use snakemake -s clean-gtdb.snakefile -j 1 --use-conda at minimum 
+# must use 
+# snakemake -s clean-gtdb.snakefile -j 1 --use-conda 
+# at minimum 
+#
+# could include a config file for easy changing of databases instead of the list below?
+
 DB_V=['gtdb-rs207.genomic-reps.dna.k31'] #add any number of gtdb sourmash databases to this list to process them all. but line 13?
 
 rule all:
@@ -56,20 +61,20 @@ rule get_assembly_summary_identifiers:
 rule run_fun_script:
     input:
         summary_idents = "manifest/assembly_summary.ident.txt",
-        mf = "manifest/gtdb-rs207.genomic-reps.dna.k31.mf.csv",
+        mf = "manifest/{db}.mf.csv",
     output:
-        new_mf = "manifest/sourmash.manifest.clean.csv",
-        report = "manifest/clean-report.txt"
+        new_mf = "manifest/{db}.mf.clean.csv",
+        report = "manifest/{db}.clean-report.txt"
     conda: "envs/sourmash.yml"
     shell: """
-        ./munge-mf-with-idents.py {input.summary_idents} {input.mf} \
+        ./scripts/munge-mf-with-idents.py {input.summary_idents} {input.mf} \
             --report {output.report} -o {output.new_mf}
     """
 
 
 rule picklist_picnic:
     input:
-        clean = "manifest/sourmash.manifest.clean.csv",
+        clean = "manifest/{db}.mf.clean.csv",
         db = "db/{db}.zip"
     output:
         woohoo = "db/{db}.clean.zip"

@@ -18,7 +18,7 @@ git clone git@github.com:dib-lab/2023-clean-gtdb.git
 
 ```
 cd 2023-clean-gtdb
-conda env create --name clean-db --file environment.yml
+conda env create --name clean-db --file envs/environment.yml
 conda activate clean-db
 ```
 
