@@ -34,3 +34,8 @@ snakemake -s clean-gtdb.snakefile -j 3 --use-conda --rerun-incomplete --resource
 ## Visualizations
 
 ![](https://raw.githubusercontent.com/dib-lab/2023-clean-gtdb/fix_faster/images/clean-gtdb-dag.svg)
+
+![](https://raw.githubusercontent.com/dib-lab/2023-clean-gtdb/fix_faster/images/clean-gtdb-rulegraph.svg)
+
+![](https://raw.githubusercontent.com/dib-lab/2023-clean-gtdb/fix_faster/images/clean-gtdb-tree.svg)
+
