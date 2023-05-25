@@ -41,9 +41,9 @@ def main():
             suffix_no_version = get_suffix_no_version(line)
             good_idents_no_version.add(suffix_no_version)
 
-    print(f"loaded {len(good_idents)} identifiers from '{args.good_idents}'",
+    print(f"\n\nLoaded {len(good_idents)} genbank identifiers from '{args.good_idents}'",
           file=sys.stderr)
-    print(f"(and loaded {len(good_idents_no_version)} identifiers sans version #)", file=sys.stderr)
+    print(f"(and loaded {len(good_idents_no_version)} identifiers without version number)", file=sys.stderr)
     assert len(good_idents) == len(good_idents_no_version)
 
     old_mf = manifest.BaseCollectionManifest.load_from_filename(args.old_mf)
@@ -70,26 +70,36 @@ def main():
                 removed_list.append(name)
 
     n_removed = len(old_mf) - len(keep_rows)
-    print(f"Kept {len(keep_rows)} from {len(old_mf)}; removed {n_removed} total",
-          file=sys.stderr)
+    n_suspect_suspension = n_removed - n_changed_version
     new_mf = manifest.CollectionManifest(keep_rows)
+    
+    print(f"\nFrom '{args.old_mf}':", file=sys.stderr)
+    print(f"Kept {len(keep_rows)} of {len(old_mf)} identifiers.",
+            file=sys.stderr)
+    print(f"\nNew manifest '{args.output}':", file=sys.stderr)
+    print(f"Kept {len(new_mf)} identifiers.", file=sys.stderr)
+    print(f"Removed {n_removed} total identifiers.",
+            file=sys.stderr)
+    print(f"Removed {n_changed_version} identifiers because of version change.",
+            file=sys.stderr)
+    print(f"Removed {n_suspect_suspension} identifiers because of suspected suspension of the genome.\n\n",
+            file=sys.stderr)
 
     with open(args.output, 'w', newline='') as outfp:
         new_mf.write_to_csv(outfp, write_header=True)
 
-    print(f"Kept {len(new_mf)}.", file=sys.stderr)
-    print(f"Removed {n_removed} total.", file=sys.stderr)
-    print(f"Removed {n_changed_version} because of changed version",
-          file=sys.stderr)
     if args.report:
         with open(args.report, 'wt') as fp:
+            print(f"From '{args.old_mf}':", file=fp)
             print(f"Kept {len(new_mf)}.", file=fp)
             print(f"Removed {n_removed} total.", file=fp)
-            print(f"Removed {n_changed_version} because of changed version",
+            print(f"Removed {n_suspect_suspension} identifiers because of suspected suspension of the genome.",
                   file=fp)
-            print("---- removed because presumed guilty ----", file=fp)
+            print(f"Removed {n_changed_version} because of changed version.",
+                  file=fp)
+            print(f"---- {n_suspect_suspension} removed because presumed guilt ----", file=fp)
             print("\n".join(removed_list), file=fp)
-            print("---- removed because version changed ----", file=fp)
+            print(f"---- {n_removed} removed because version changed ----", file=fp)
             print("\n".join(updated_version_list), file=fp)
 
 
