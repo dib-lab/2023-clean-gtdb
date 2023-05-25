@@ -33,4 +33,4 @@ snakemake -s clean-gtdb.snakefile -j 3 --use-conda --rerun-incomplete --resource
 
 ## Visualizations
 
-![](https://raw.githubusercontent.com/dib-lab/2023-clean-gtdb/main/clean-gtdb-workflow-dag.png)
+![](https://raw.githubusercontent.com/dib-lab/2023-clean-gtdb/fix_faster/images/clean-gtdb-dag.svg)
