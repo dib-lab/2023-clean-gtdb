@@ -56,8 +56,7 @@ snakemake -s clean-gtdb.snakefile -j 3 --use-conda --rerun-incomplete --resource
 ├── images
 │   ├── clean-gtdb-dag.svg
 │   ├── clean-gtdb-rulegraph.svg
-│   ├── clean-gtdb-tree.html
-│   └── clean-gtdb-tree.svg
+│   └── clean-gtdb-tree.html
 ├── manifest
 │   ├── assembly_summary.ident.txt
 │   ├── gtdb-rs207.genomic-reps.dna.k31.clean-report.txt
@@ -66,6 +65,6 @@ snakemake -s clean-gtdb.snakefile -j 3 --use-conda --rerun-incomplete --resource
 └── scripts
     └── munge-mf-with-idents.py
 
-7 directories, 22 files
+7 directories, 21 files
 ```
 
