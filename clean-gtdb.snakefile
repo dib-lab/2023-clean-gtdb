@@ -73,7 +73,7 @@ rule run_fun_script:
         summary_idents = "manifest/assembly_summary_genbank.good_ident.txt",
         supressed_idents = "manifest/assembly_summary_genbank_historical.bad_ident.txt",
         mf = "manifest/{db}.mf.csv",
-        script = "scripts/munge-mf-with-idents.py",
+        script = "scripts/munge-mf-with-idents.py", #This causes the snakefile to run without forcerun (-R) if the script has been changed
     output:
         new_mf = "manifest/{db}.mf.clean.csv",
         report = "manifest/{db}.clean-report.txt"
@@ -83,8 +83,9 @@ rule run_fun_script:
     resources:
         mem_mb = 8000,
         time_min = 30
-    params: genbank_time="db/assembly_summary_genbank.txt"
-        #genbank_time="last modified: %s" % time.ctime(os.path.getmtime("db/assembly_summary_genbank.txt"))
+    params: 
+        genbank_time="db/assembly_summary_genbank.txt",
+        genbank_ver_status="db/assembly_summary_genbank_historical.txt",        
     script: "scripts/munge-mf-with-idents.py"
 
 #   shell: """
