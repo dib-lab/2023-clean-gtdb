@@ -13,11 +13,14 @@ def main():
     p = argparse.ArgumentParser()
 
     # Add command-line arguments with default values from Snakemake
-    p.add_argument('good_idents', nargs='?', default=snakemake.input.summary_idents, help='list of valid identifiers')
-    p.add_argument('bad_idents', nargs='?', default=snakemake.input.supressed_idents, help='list of suppressed and re-versioned identifiers')
-    p.add_argument('old_mf', nargs='?', default=snakemake.input.mf, help='existing sourmash database manifest')
-    p.add_argument('--report', nargs='?', default=snakemake.output.report, help='details of removed etc., for humans')
-    p.add_argument('-o', '--output', nargs='?', default=snakemake.output.new_mf, help='manifest cleansed of the impure')
+    p.add_argument('good_idents', nargs='?', help='list of valid identifiers')
+    p.add_argument('bad_idents', nargs='?', help='list of suppressed and re-versioned identifiers')
+    p.add_argument('old_mf', nargs='?', help='existing sourmash database manifest')
+    p.add_argument('--report', nargs='?', help='details of removed etc., for humans')
+    p.add_argument('-o', '--output', nargs='?', help='manifest cleansed of the impure')
+    p.add_argument('-t', help='the Genbank assembly summary text file')
+    p.add_argument('-s', help='the Genbank assembly summary history text file')
+
     args = p.parse_args()
 
     good_idents = set()
@@ -132,20 +135,20 @@ def main():
             bad.append(suffix)
     #print(bad)
 
-    with open(snakemake.params.genbank_ver_status, "r", newline='') as fp:
+    with open(args.s, "r", newline='') as fp:
         # skip header
         for x in range(2):
             next(fp)
         # create list from historical db    
         doc = [line.strip().split('\t') for line in fp]
 
-    #print(doc)
+    # Create a list of identifier and status
     for row in doc:
         name = row[0]
         suffix = get_suffix(name)
 
         if suffix in bad:
-            suppressed_versioned.append(row)
+            suppressed_versioned.append(row[0::10])
         
 
     print(len(suppressed_versioned))
@@ -154,9 +157,8 @@ def main():
     n_suspect_suspension = n_removed - n_changed_version
     new_mf = manifest.CollectionManifest(keep_rows)
     
-    #genbank_time = snakemake@params[['genbank_time']]
-    creat_time = time.ctime(os.path.getctime(snakemake.params.genbank_time))
-    mod_time = time.ctime(os.path.getmtime(snakemake.params.genbank_time)) 
+    creat_time = time.ctime(os.path.getctime(args.t))
+    mod_time = time.ctime(os.path.getmtime(args.t)) 
 
 
     print(f"\n\nFrom genome assemblies database:", file=sys.stderr)
@@ -188,8 +190,8 @@ def main():
 
     if args.report:
         with open(args.report, 'wt') as fp:
-            print(f"From '{args.old_mf}':", file=fp)
-            print(f"Kept {len(new_mf)}.", file=fp)
+            print(f"From {len(old_mf)} in '{args.old_mf}':", file=fp)
+            print(f"Kept {len(new_mf)} in '{args.output}.", file=fp)
             print(f"Removed {n_removed} total.", file=fp)
             print(f"Removed {n_suspect_suspension} identifiers because of suspected suspension of the genome.",
                   file=fp)

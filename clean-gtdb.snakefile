@@ -85,13 +85,12 @@ rule run_fun_script:
         time_min = 30
     params: 
         genbank_time="db/assembly_summary_genbank.txt",
-        genbank_ver_status="db/assembly_summary_genbank_historical.txt",        
-    script: "scripts/munge-mf-with-idents.py"
-
-#   shell: """
-#       {input.script} {input.summary_idents} {input.mf} \
-#           --report {output.report} -o {output.new_mf}
-#    """
+        genbank_ver_status="db/assembly_summary_genbank_historical.txt",
+    shell: """
+        {input.script} {input.summary_idents} {input.supressed_idents} {input.mf} \
+           --report {output.report} -o {output.new_mf} \
+           -t {params.genbank_time} -s {params.genbank_ver_status}
+    """
 
 
 rule picklist_picnic:
