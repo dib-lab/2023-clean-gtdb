@@ -18,7 +18,7 @@ git clone git@github.com:dib-lab/2023-clean-gtdb.git
 
 ```
 cd 2023-clean-gtdb
-conda env create --name clean-db --file environment.yml
+conda env create --name clean-db --file envs/environment.yml
 conda activate clean-db
 ```
 
@@ -33,4 +33,38 @@ snakemake -s clean-gtdb.snakefile -j 3 --use-conda --rerun-incomplete --resource
 
 ## Visualizations
 
-![](https://raw.githubusercontent.com/dib-lab/2023-clean-gtdb/main/clean-gtdb-workflow-dag.png)
+![](https://raw.githubusercontent.com/dib-lab/2023-clean-gtdb/fix_faster/images/clean-gtdb-rulegraph.svg)
+
+```
+2023-clean-gtdb
+├── LICENSE
+├── README.md
+├── benchmarks
+│   ├── 0_download_all_available_genbank_genomes.txt
+│   ├── 1_manifest_from_gtdb-rs207.genomic-reps.dna.k31.txt
+│   ├── 2_get_ass_identifiers.txt
+│   ├── 3_run_fun_script_on_gtdb-rs207.genomic-reps.dna.k31.txt
+│   └── 4_picklist_picnic_gtdb-rs207.genomic-reps.dna.k31.txt
+├── clean-gtdb.snakefile
+├── db
+│   ├── assembly_summary_genbank.txt
+│   ├── gtdb-rs207.genomic-reps.dna.k31.clean.zip
+│   └── gtdb-rs207.genomic-reps.dna.k31.zip
+├── envs
+│   ├── environment.yml
+│   └── sourmash.yml
+├── images
+│   ├── clean-gtdb-dag.svg
+│   ├── clean-gtdb-rulegraph.svg
+│   └── clean-gtdb-tree.html
+├── manifest
+│   ├── assembly_summary.ident.txt
+│   ├── gtdb-rs207.genomic-reps.dna.k31.clean-report.txt
+│   ├── gtdb-rs207.genomic-reps.dna.k31.mf.clean.csv
+│   └── gtdb-rs207.genomic-reps.dna.k31.mf.csv
+└── scripts
+    └── munge-mf-with-idents.py
+
+7 directories, 21 files
+```
+

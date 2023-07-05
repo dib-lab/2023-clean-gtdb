@@ -1,12 +1,21 @@
+# must use 
+# snakemake -s clean-gtdb.snakefile -j 1 --use-conda 
+# at minimum 
+#
+# could include a config file for easy changing of databases instead of the list below?
+
+
+
+DB_V=['gtdb-rs207.genomic-reps.dna.k31'] #add any number of gtdb sourmash databases to this list to process them all. but line 13?
+
+#configfile: "config.yml"
 
 rule all:
-    input: "db/truncated.database.zip"
+    input: expand("db/{gtdb}.clean.zip", gtdb=DB_V)
 
 rule download_sourmash_gather_database:
-    output: "db/gtdb-rs207.genomic-reps.dna.k31.zip"
+    output: expand("db/{db}.zip", db=DB_V)
     threads: 1
-    benchmark:
-        "benchmarks/download_sourmash_gather_database.txt"
     resources:
         mem_mb = 1000,
         time_min = 30
@@ -15,23 +24,26 @@ rule download_sourmash_gather_database:
     '''
 
 rule download_all_available_genbank_genomes:
-    output: "db/assembly_summary_genbank.txt"
+    output: 
+        full_db = "db/assembly_summary_genbank.txt",
+        supressed_db = "db/assembly_summary_genbank_historical.txt",
     threads: 1
     benchmark:
-        "benchmarks/download_all_available_genbank_genomes.txt"
+        "benchmarks/0_download_all_available_genbank_genomes.txt"
     resources:
         mem_mb = 1000,
         time_min = 30
     shell:'''
-        rsync -t -v rsync://ftp.ncbi.nlm.nih.gov/genomes/ASSEMBLY_REPORTS/assembly_summary_genbank.txt {output}
+        rsync -t -v rsync://ftp.ncbi.nlm.nih.gov/genomes/ASSEMBLY_REPORTS/assembly_summary_genbank.txt {output.full_db}
+        rsync -t -v rsync://ftp.ncbi.nlm.nih.gov/genomes/ASSEMBLY_REPORTS/assembly_summary_genbank_historical.txt {output.supressed_db}
     '''
 
 rule sourmash_manifest_destiny:
-    input: "db/gtdb-rs207.genomic-reps.dna.k31.zip"
-    output: "manifest/sourmash.manifest.original.csv"
+    input: "db/{db}.zip",
+    output: "manifest/{db}.mf.csv",
     conda: "envs/sourmash.yml"
     benchmark:
-        "benchmarks/sourmash_manifest_destiny.txt"
+        "benchmarks/1_manifest_from_{db}.txt"
     resources:
         mem_mb = 8000,
         time_min = 30
@@ -39,53 +51,60 @@ rule sourmash_manifest_destiny:
         sourmash sig manifest -o {output} {input} --no-rebuild
     '''
 
-rule gtdb_manifest_creation:
-    input: "manifest/sourmash.manifest.original.csv"
-    output: "manifest/gtdb.manifest.csv"
+rule get_assembly_summary_identifiers:
+    input:
+        db_good = "db/assembly_summary_genbank.txt",
+        db_bad = "db/assembly_summary_genbank_historical.txt",
+    output: 
+        good = "manifest/assembly_summary_genbank.good_ident.txt",
+        bad = "manifest/assembly_summary_genbank_historical.bad_ident.txt",
     benchmark:
-        "benchmarks/gtdb_manifest_creation.txt"
-    resources:
-        mem_mb = 1000,
-        time_min = 30
-    shell:'''
-        sed '1,2d' {input} | sed 's/^[^"]*"//; s/".*//' | cut -d' ' -f1 > {output} 
-    '''
-
-
-rule grepping_the_problem:
-    input: db = "db/assembly_summary_genbank.txt",
-           manifest1 = "manifest/gtdb.manifest.csv",
-           manifest2 = "manifest/sourmash.manifest.original.csv"
-    output: tmp1 = "manifest/all.gtdb.genbank.txt",
-            tmp2 = "manifest/acc.gtdb.genbank.txt",
-            tmp3 = "manifest/short.acc.gtdb.genbank.txt",
-            clean = "manifest/sourmash.manifest.cleaned.csv"
-    benchmark:
-        "benchmarks/grepping_the_problem.txt"
+        "benchmarks/2_get_ass_identifiers.txt"
     resources:
         mem_mb = 8000,
         time_min = 30
     shell:'''
-        grep -wFf {input.manifest1} {input.db} > {output.tmp1}
-        cut -f 1 {output.tmp1} > {output.tmp2}
-        sed 's/.\\{{4\\}}\\(.*\\)/\\1/' {output.tmp2} > {output.tmp3}
-        grep -f {output.tmp3} {input.manifest2} > {output.clean}
+        cut -f 1 {input.db_good} | awk 'NR>2' > {output.good}
+        cut -f 1 {input.db_bad} | awk 'NR>2' > {output.bad}
     '''
+
+rule run_fun_script:
+    input:
+        summary_idents = "manifest/assembly_summary_genbank.good_ident.txt",
+        supressed_idents = "manifest/assembly_summary_genbank_historical.bad_ident.txt",
+        mf = "manifest/{db}.mf.csv",
+        script = "scripts/munge-mf-with-idents.py", #This causes the snakefile to run without forcerun (-R) if the script has been changed
+    output:
+        new_mf = "manifest/{db}.mf.clean.csv",
+        report = "manifest/{db}.clean-report.txt"
+    conda: "envs/sourmash.yml"
+    benchmark:
+        "benchmarks/3_run_fun_script_on_{db}.txt"
+    resources:
+        mem_mb = 8000,
+        time_min = 30
+    params: 
+        genbank_time="db/assembly_summary_genbank.txt",
+        genbank_ver_status="db/assembly_summary_genbank_historical.txt",
+    shell: """
+        {input.script} {input.summary_idents} {input.supressed_idents} {input.mf} \
+           --report {output.report} -o {output.new_mf} \
+           -t {params.genbank_time} -s {params.genbank_ver_status}
+    """
 
 
 rule picklist_picnic:
-    input: origin = "manifest/sourmash.manifest.original.csv",
-           clean = "manifest/sourmash.manifest.cleaned.csv",
-           db = "db/gtdb-rs207.genomic-reps.dna.k31.zip"
-    output: headers = "manifest/sourmash.manifest.csv",
-            woohoo = "db/truncated.database.zip"
+    input:
+        clean = "manifest/{db}.mf.clean.csv",
+        db = "db/{db}.zip"
+    output:
+        woohoo = "db/{db}.clean.zip"
     conda: "envs/sourmash.yml"
     benchmark:
-         "benchmarks/picklist_picninc.txt"
+         "benchmarks/4_picklist_picnic_{db}.txt"
     resources:
         mem_mb = 8000,
         time_min = 30
     shell:'''
-        ( head -n 2 {input.origin} && cat {input.clean} ) > {output.headers}
-        sourmash sig extract --picklist {output.headers}:md5:md5 {input.db} -o {output.woohoo}
+        sourmash sig extract --picklist {input.clean}::manifest {input.db} -o {output.woohoo}
     '''
